@@ -1,0 +1,1614 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NETVENTURE: TKJ ENTERPRISE QUEST — Game PAS KIK</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    /* Pengaturan font utama dan font monospace teknis jaringan */
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background-color: #060d1b;
+      color: #e2e8f0;
+      overflow-x: hidden;
+    }
+
+    .font-mono-tech {
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* Pola grid jaringan / topologi halus di latar belakang */
+    .net-grid-bg {
+      background-image:
+        radial-gradient(circle at 15% 15%, rgba(14, 165, 233, 0.14) 0%, transparent 45%),
+        radial-gradient(circle at 85% 20%, rgba(16, 185, 129, 0.12) 0%, transparent 45%),
+        linear-gradient(to right, rgba(56, 189, 248, 0.05) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(56, 189, 248, 0.05) 1px, transparent 1px);
+      background-size: 100% 100%, 100% 100%, 36px 36px, 36px 36px;
+    }
+
+    /* Animasi muncul halus untuk kartu misi & umpan balik */
+    @keyframes fadeSlideUp {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .animate-mission {
+      animation: fadeSlideUp 0.28s ease-out forwards;
+    }
+
+    /* Gaya cetak khusus rekapitulasi nilai PAS */
+    @media print {
+      body {
+        background: #ffffff !important;
+        color: #0f172a !important;
+      }
+      .no-print {
+        display: none !important;
+      }
+      .print-card {
+        border: 1px solid #cbd5e1 !important;
+        box-shadow: none !important;
+        background: #ffffff !important;
+        color: #0f172a !important;
+      }
+    }
+  </style>
+</head>
+<body class="net-grid-bg min-h-screen flex flex-col selection:bg-sky-500/30 selection:text-sky-200">
+  <!-- Header Aplikasi PAS -->
+  <header class="sticky top-0 z-30 backdrop-blur-md bg-slate-950/85 border-b border-sky-500/20 no-print">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center gap-3">
+        <!-- SVG Logo Topologi Jaringan & Kewirausahaan -->
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-sky-500 to-emerald-500 flex items-center justify-center shadow-lg shadow-sky-500/20 shrink-0">
+          <svg class="w-6 h-6 text-slate-950" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24" aria-hidden="true">
+            <circle cx="12" cy="5" r="2.5" />
+            <circle cx="5" cy="18" r="2.5" />
+            <circle cx="19" cy="18" r="2.5" />
+            <path stroke-linecap="round" d="M10.5 7.2L6.5 15.6M13.5 7.2l4 8.4M7.5 18h9" />
+          </svg>
+        </div>
+        <div>
+          <div class="flex items-center gap-2 flex-wrap">
+            <span class="font-mono-tech text-xs uppercase tracking-wider px-2 py-0.5 rounded-md bg-sky-500/15 text-sky-300 border border-sky-400/25">
+              PAS • KIK TJKT
+            </span>
+            <span class="text-xs text-slate-400 hidden sm:inline">Penilaian Akhir Semester</span>
+          </div>
+          <h1 class="text-base sm:text-lg font-extrabold tracking-tight text-white">
+            NETVENTURE: <span class="text-sky-400">TKJ ENTERPRISE QUEST</span>
+          </h1>
+        </div>
+      </div>
+
+      <!-- Indikator Status & Tombol Reset -->
+      <div class="flex items-center gap-2 sm:gap-3">
+        <div id="header-student-pill" class="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-900/90 border border-slate-700/80 text-xs text-slate-300">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          <span id="header-student-text">Peserta Aktif</span>
+        </div>
+        <button
+          type="button"
+          id="btn-reset-header"
+          onclick="confirmRestartGame()"
+          class="px-3 py-2 rounded-xl text-xs font-semibold bg-slate-800/90 hover:bg-rose-950/70 text-slate-200 hover:text-rose-200 border border-slate-700 hover:border-rose-500/40 transition cursor-pointer"
+          title="Ulangi Game dari Awal"
+        >
+          Ulangi Game
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Papan Skor Real-Time & Progress 4 Level (Tampil saat sesi game berjalan atau selesai) -->
+  <section id="hud-panel" class="hidden max-w-6xl w-full mx-auto px-4 sm:px-6 pt-4 no-print">
+    <div class="rounded-2xl bg-slate-900/85 border border-sky-500/20 p-4 shadow-xl shadow-slate-950/60">
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
+        <div class="rounded-xl bg-slate-950/70 border border-slate-800 p-3">
+          <div class="text-[11px] uppercase tracking-wider text-slate-400">Skor Real-Time</div>
+          <div class="mt-1 flex items-baseline gap-1.5">
+            <span id="hud-score" class="font-mono-tech text-2xl font-extrabold text-emerald-400">0</span>
+            <span class="font-mono-tech text-xs text-slate-400">/ 300 Poin</span>
+          </div>
+        </div>
+
+        <div class="rounded-xl bg-slate-950/70 border border-slate-800 p-3">
+          <div class="text-[11px] uppercase tracking-wider text-slate-400">Konversi Nilai PAS</div>
+          <div class="mt-1 flex items-baseline gap-1.5">
+            <span id="hud-grade" class="font-mono-tech text-2xl font-extrabold text-sky-400">0.00</span>
+            <span class="text-xs text-slate-400">/ 100</span>
+          </div>
+        </div>
+
+        <div class="rounded-xl bg-slate-950/70 border border-slate-800 p-3">
+          <div class="text-[11px] uppercase tracking-wider text-slate-400">Level & Bobot Misi</div>
+          <div class="mt-1 flex items-center justify-between gap-2">
+            <span id="hud-level-badge" class="text-sm font-bold text-white truncate">Level 1</span>
+            <span id="hud-point-weight" class="font-mono-tech text-xs px-2 py-0.5 rounded-md bg-amber-500/15 text-amber-300 border border-amber-400/30 shrink-0">
+              +10 Poin/Misi
+            </span>
+          </div>
+        </div>
+
+        <div class="rounded-xl bg-slate-950/70 border border-slate-800 p-3">
+          <div class="text-[11px] uppercase tracking-wider text-slate-400">Misi Terselesaikan</div>
+          <div class="mt-1 flex items-baseline gap-1.5">
+            <span id="hud-missions-done" class="font-mono-tech text-2xl font-extrabold text-amber-300">0</span>
+            <span class="font-mono-tech text-xs text-slate-400">/ 17 Misi</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Indikator Progress 4 Level Berurutan -->
+      <div id="level-stepper" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5"></div>
+    </div>
+  </section>
+
+  <!-- Area Utama Aplikasi -->
+  <main class="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-6">
+    <!-- Kotak Pesan / Notifikasi Non-Alert -->
+    <div id="toast-banner" class="hidden mb-4 rounded-xl px-4 py-3 text-sm font-medium border flex items-center justify-between gap-3 animate-mission no-print">
+      <span id="toast-message"></span>
+      <button type="button" onclick="hideToast()" class="text-xs opacity-80 hover:opacity-100 underline cursor-pointer">Tutup</button>
+    </div>
+
+    <!-- LAYAR 1: FORM IDENTITAS SISWA & PENGANTAR PAS -->
+    <section id="screen-intro" class="animate-mission">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        <!-- Kolom Kiri: Informasi Misi PAS & Struktur 4 Level -->
+        <div class="lg:col-span-7 space-y-5">
+          <div class="rounded-2xl bg-slate-900/85 border border-sky-500/25 p-6 shadow-xl">
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-400/25 text-emerald-300 text-xs font-semibold mb-4">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              Simulasi Kewirausahaan Berbasis Kasus TJKT
+            </div>
+            <h2 class="text-2xl sm:text-3xl font-extrabold text-white leading-tight">
+              Bangun & Amankan Usaha Teknologi Berbasis Kompetensi <span class="text-sky-400">TKJ</span>
+            </h2>
+            <p class="mt-3 text-sm sm:text-base text-slate-300 leading-relaxed">
+              Anda berperan sebagai <strong class="text-white">Founder & Lead Network Engineer</strong> yang harus menyelesaikan <strong class="text-sky-300">17 misi berurutan</strong> di dalam <strong class="text-emerald-300">4 level</strong> sebagai instrumen <strong class="text-white">Penilaian Akhir Semester (PAS)</strong> mata pelajaran Kreativitas, Inovasi, dan Kewirausahaan (KIK).
+            </p>
+
+            <!-- Ringkasan 4 Level & Poin -->
+            <div class="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div class="rounded-xl bg-slate-950/75 border border-slate-800 p-3.5">
+                <div class="flex items-center justify-between">
+                  <span class="text-xs font-bold uppercase text-sky-400">Level 1</span>
+                  <span class="font-mono-tech text-xs font-bold text-emerald-300">4 × 10 = 40 Poin</span>
+                </div>
+                <div class="font-bold text-white text-sm mt-1">Scout & Feasibility Check</div>
+                <p class="text-xs text-slate-400 mt-1">Peluang usaha TKJ, tujuan & tahapan studi kelayakan usaha.</p>
+              </div>
+
+              <div class="rounded-xl bg-slate-950/75 border border-slate-800 p-3.5">
+                <div class="flex items-center justify-between">
+                  <span class="text-xs font-bold uppercase text-sky-400">Level 2</span>
+                  <span class="font-mono-tech text-xs font-bold text-emerald-300">4 × 15 = 60 Poin</span>
+                </div>
+                <div class="font-bold text-white text-sm mt-1">SWOT & Strategic Pivot</div>
+                <p class="text-xs text-slate-400 mt-1">Faktor internal/eksternal SWOT, evaluasi & prioritas strategi.</p>
+              </div>
+
+              <div class="rounded-xl bg-slate-950/75 border border-slate-800 p-3.5">
+                <div class="flex items-center justify-between">
+                  <span class="text-xs font-bold uppercase text-sky-400">Level 3</span>
+                  <span class="font-mono-tech text-xs font-bold text-emerald-300">5 × 20 = 100 Poin</span>
+                </div>
+                <div class="font-bold text-white text-sm mt-1">Business Model Architect</div>
+                <p class="text-xs text-slate-400 mt-1">10 jenis model bisnis & 9 komponen Business Model Canvas (BMC).</p>
+              </div>
+
+              <div class="rounded-xl bg-slate-950/75 border border-slate-800 p-3.5">
+                <div class="flex items-center justify-between">
+                  <span class="text-xs font-bold uppercase text-sky-400">Level 4</span>
+                  <span class="font-mono-tech text-xs font-bold text-emerald-300">4 × 25 = 100 Poin</span>
+                </div>
+                <div class="font-bold text-white text-sm mt-1">IP Shield & Final Launch</div>
+                <p class="text-xs text-slate-400 mt-1">HAKI (Hak Cipta, Paten, Merek, Rahasia Dagang) & peluncuran usaha.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Kolom Kanan: Form Identitas Siswa -->
+        <div class="lg:col-span-5">
+          <div class="rounded-2xl bg-slate-900/90 border border-sky-400/30 p-6 shadow-2xl">
+            <h3 class="text-lg font-bold text-white flex items-center gap-2">
+              <svg class="w-5 h-5 text-sky-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              </svg>
+              Identitas Peserta PAS
+            </h3>
+            <p class="text-xs text-slate-400 mt-1">
+              Lengkapi data identitas sebelum memulai misi. Data akan dicantumkan pada rekapitulasi nilai akhir.
+            </p>
+
+            <form id="student-form" onsubmit="handleStartGame(event)" class="mt-5 space-y-4">
+              <div>
+                <label for="input-nama" class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1.5">
+                  Nama Lengkap Siswa <span class="text-rose-400">*</span>
+                </label>
+                <input
+                  type="text"
+                  id="input-nama"
+                  required
+                  placeholder="Contoh: Ahmad Fauzan Pratama"
+                  class="w-full rounded-xl bg-slate-950/80 border border-slate-700 focus:border-sky-400 focus:ring-2 focus:ring-sky-500/20 px-4 py-3 text-sm text-white placeholder-slate-500 outline-none transition"
+                />
+              </div>
+
+              <div>
+                <label for="input-kelas" class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1.5">
+                  Kelas / Konsentrasi Keahlian TKJ <span class="text-rose-400">*</span>
+                </label>
+                <select
+                  id="input-kelas"
+                  required
+                  class="w-full rounded-xl bg-slate-950/80 border border-slate-700 focus:border-sky-400 focus:ring-2 focus:ring-sky-500/20 px-4 py-3 text-sm text-white outline-none transition cursor-pointer"
+                >
+                  <option value="" disabled selected>Pilih Kelas & Konsentrasi TKJ</option>
+                  <option value="XI TKJ 1 (Teknik Komputer dan Jaringan)">XI TKJ 1 (Teknik Komputer dan Jaringan)</option>
+                  <option value="XI TKJ 2 (Teknik Komputer dan Jaringan)">XI TKJ 2 (Teknik Komputer dan Jaringan)</option>
+                  <option value="XI TJKT 1 (Teknik Jaringan Komputer dan Telekomunikasi)">XI TJKT 1 (Teknik Jaringan Komputer dan Telekomunikasi)</option>
+                  <option value="XII TKJ 1 (Teknik Komputer dan Jaringan)">XII TKJ 1 (Teknik Komputer dan Jaringan)</option>
+                  <option value="XII TKJ 2 (Teknik Komputer dan Jaringan)">XII TKJ 2 (Teknik Komputer dan Jaringan)</option>
+                  <option value="XII TJKT 1 (Teknik Jaringan Komputer dan Telekomunikasi)">XII TJKT 1 (Teknik Jaringan Komputer dan Telekomunikasi)</option>
+                </select>
+              </div>
+
+              <div>
+                <label for="input-absen" class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1.5">
+                  Nomor Presensi / Absen <span class="text-rose-400">*</span>
+                </label>
+                <input
+                  type="number"
+                  id="input-absen"
+                  required
+                  min="1"
+                  max="60"
+                  placeholder="Contoh: 12"
+                  class="w-full rounded-xl bg-slate-950/80 border border-slate-700 focus:border-sky-400 focus:ring-2 focus:ring-sky-500/20 px-4 py-3 text-sm text-white placeholder-slate-500 outline-none transition font-mono-tech"
+                />
+              </div>
+
+              <div class="rounded-xl bg-sky-950/35 border border-sky-500/20 p-3 text-xs text-sky-200/90 leading-relaxed">
+                <strong>Aturan Main:</strong> Selesaikan misi dari <strong>Level 1</strong> hingga <strong>Level 4</strong> secara berurutan. Setiap keputusan memberikan umpan balik langsung dan pembaruan skor real-time (maksimal <strong>300 poin</strong>).
+              </div>
+
+              <button
+                type="submit"
+                class="w-full py-3.5 px-5 rounded-xl bg-gradient-to-r from-sky-500 to-emerald-500 hover:from-sky-400 hover:to-emerald-400 text-slate-950 font-extrabold text-sm shadow-lg shadow-sky-500/25 transition transform active:scale-[0.99] cursor-pointer flex items-center justify-center gap-2"
+              >
+                <span>Mulai Misi PAS (Level 1)</span>
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                </svg>
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- LAYAR 2: AREA PERMAINAN MISI BERURUTAN -->
+    <section id="screen-game" class="hidden animate-mission">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        <!-- Kartu Misi Utama -->
+        <div class="lg:col-span-8 rounded-2xl bg-slate-900/90 border border-sky-500/25 p-5 sm:p-6 shadow-xl">
+          <div class="flex flex-wrap items-center justify-between gap-2 pb-4 border-b border-slate-800">
+            <div class="flex items-center gap-2 flex-wrap">
+              <span id="mission-level-tag" class="font-mono-tech text-xs font-bold px-2.5 py-1 rounded-lg bg-sky-500/15 text-sky-300 border border-sky-400/30">
+                LEVEL 1
+              </span>
+              <span id="mission-code-tag" class="font-mono-tech text-xs font-semibold px-2.5 py-1 rounded-lg bg-slate-800 text-slate-300">
+                MISI 1.1
+              </span>
+              <span id="mission-topic-tag" class="text-xs font-medium px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-300 border border-emerald-500/20">
+                Topik
+              </span>
+            </div>
+            <span id="mission-reward-tag" class="font-mono-tech text-xs font-bold px-3 py-1 rounded-lg bg-amber-500/15 text-amber-300 border border-amber-400/30">
+              +10 Poin
+            </span>
+          </div>
+
+          <h2 id="mission-title" class="mt-4 text-xl sm:text-2xl font-extrabold text-white"></h2>
+
+          <div class="mt-4 rounded-xl bg-slate-950/80 border border-slate-800 p-4">
+            <div class="text-[11px] font-mono-tech uppercase tracking-wider text-sky-400 mb-1.5">
+              Skenario Lapangan TJKT
+            </div>
+            <p id="mission-scenario" class="text-sm sm:text-base text-slate-200 leading-relaxed"></p>
+          </div>
+
+          <p id="mission-prompt" class="mt-4 text-sm font-semibold text-amber-200/90"></p>
+
+          <!-- Opsi Keputusan -->
+          <div id="mission-options" class="mt-4 space-y-3"></div>
+
+          <!-- Umpan Balik Langsung Setelah Menjawab -->
+          <div id="feedback-box" class="hidden mt-5 rounded-xl border p-4 animate-mission">
+            <div class="flex items-start gap-3">
+              <div id="feedback-icon" class="mt-0.5 shrink-0"></div>
+              <div class="flex-1">
+                <div class="flex flex-wrap items-center justify-between gap-2">
+                  <h4 id="feedback-title" class="font-bold text-sm sm:text-base"></h4>
+                  <span id="feedback-points" class="font-mono-tech text-xs font-bold px-2.5 py-0.5 rounded-md"></span>
+                </div>
+                <p id="feedback-explanation" class="mt-1.5 text-xs sm:text-sm leading-relaxed text-slate-200"></p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tombol Navigasi Misi Berikutnya -->
+          <div class="mt-6 pt-4 border-t border-slate-800 flex items-center justify-between gap-3">
+            <div id="mission-progress-label" class="text-xs text-slate-400 font-mono-tech"></div>
+            <button
+              type="button"
+              id="btn-next-mission"
+              onclick="goToNextStep()"
+              disabled
+              class="px-5 py-2.5 rounded-xl font-bold text-sm bg-sky-500 hover:bg-sky-400 text-slate-950 disabled:opacity-40 disabled:cursor-not-allowed transition cursor-pointer flex items-center gap-2"
+            >
+              <span id="btn-next-label">Lanjut ke Misi Berikutnya</span>
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Panel Samping: Log Perolehan Poin per Level -->
+        <aside class="lg:col-span-4 space-y-4">
+          <div class="rounded-2xl bg-slate-900/90 border border-slate-800 p-5 shadow-xl">
+            <h3 class="text-sm font-bold uppercase tracking-wider text-sky-400">Ringkasan Poin per Level</h3>
+            <p class="text-xs text-slate-400 mt-1">Setiap level memiliki bobot poin berbeda sesuai tingkat kompleksitas.</p>
+            <div id="sidebar-level-breakdown" class="mt-4 space-y-3"></div>
+          </div>
+
+          <div class="rounded-2xl bg-slate-900/75 border border-slate-800 p-4 text-xs text-slate-400 leading-relaxed">
+            <strong class="text-slate-200">Catatan Evaluasi PAS:</strong> Seluruh skenario menguji pemahaman peluang usaha TKJ, studi kelayakan usaha, analisis SWOT, jenis model bisnis, 9 blok BMC, dan HAKI.
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <!-- LAYAR 3: REKAPITULASI NILAI PAS AKHIR -->
+    <section id="screen-summary" class="hidden animate-mission">
+      <div class="print-card rounded-2xl bg-slate-900/95 border border-emerald-500/30 p-6 sm:p-8 shadow-2xl">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-slate-800">
+          <div>
+            <span class="font-mono-tech text-xs uppercase tracking-wider px-2.5 py-1 rounded-lg bg-emerald-500/15 text-emerald-300 border border-emerald-400/30">
+              Laporan Hasil Penilaian Akhir Semester (PAS)
+            </span>
+            <h2 class="mt-2 text-2xl sm:text-3xl font-extrabold text-white">Rekapitulasi Nilai Akhir</h2>
+            <p class="text-xs sm:text-sm text-slate-400 mt-1">
+              Mata Pelajaran: Kreativitas, Inovasi, dan Kewirausahaan (KIK) • Konsentrasi TKJ / TJKT
+            </p>
+          </div>
+
+          <div class="no-print flex flex-wrap items-center gap-2.5">
+            <button
+              type="button"
+              onclick="copySummaryToClipboard()"
+              class="px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold bg-sky-500/15 hover:bg-sky-500/25 text-sky-300 border border-sky-400/35 transition cursor-pointer"
+            >
+              Salin Ringkasan
+            </button>
+            <button
+              type="button"
+              onclick="window.print()"
+              class="px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold bg-slate-800 hover:bg-slate-700 text-white border border-slate-700 transition cursor-pointer"
+            >
+              Cetak / Simpan PDF
+            </button>
+            <button
+              type="button"
+              onclick="restartGameImmediate()"
+              class="px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold bg-emerald-500 hover:bg-emerald-400 text-slate-950 transition cursor-pointer"
+            >
+              Main Lagi
+            </button>
+          </div>
+        </div>
+
+        <!-- Identitas Siswa -->
+        <div class="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-4 rounded-xl bg-slate-950/70 border border-slate-800 p-4">
+          <div>
+            <div class="text-[11px] uppercase tracking-wider text-slate-400">Nama Peserta</div>
+            <div id="sum-nama" class="font-bold text-white text-sm sm:text-base mt-0.5">-</div>
+          </div>
+          <div>
+            <div class="text-[11px] uppercase tracking-wider text-slate-400">Kelas / Konsentrasi</div>
+            <div id="sum-kelas" class="font-bold text-white text-sm sm:text-base mt-0.5">-</div>
+          </div>
+          <div>
+            <div class="text-[11px] uppercase tracking-wider text-slate-400">No. Presensi</div>
+            <div id="sum-absen" class="font-mono-tech font-bold text-sky-300 text-sm sm:text-base mt-0.5">-</div>
+          </div>
+        </div>
+
+        <!-- Skor Total, Konversi 0-100 & Predikat -->
+        <div class="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div class="rounded-2xl bg-slate-950/80 border border-slate-800 p-5">
+            <div class="text-xs uppercase tracking-wider text-slate-400">Total Skor Misi</div>
+            <div class="mt-2 flex items-baseline gap-2">
+              <span id="sum-score" class="font-mono-tech text-3xl sm:text-4xl font-extrabold text-emerald-400">0</span>
+              <span class="font-mono-tech text-sm text-slate-400">/ 300 Poin</span>
+            </div>
+            <div id="sum-accuracy" class="mt-2 text-xs text-slate-400">Jawaban tepat: 0 / 17 misi</div>
+          </div>
+
+          <div class="rounded-2xl bg-slate-950/80 border border-slate-800 p-5">
+            <div class="text-xs uppercase tracking-wider text-slate-400">Konversi Nilai PAS (Skala 0–100)</div>
+            <div class="mt-2 flex items-baseline gap-2">
+              <span id="sum-grade" class="font-mono-tech text-3xl sm:text-4xl font-extrabold text-sky-400">0.00</span>
+              <span class="text-sm text-slate-400">/ 100</span>
+            </div>
+            <div class="mt-2 text-xs text-slate-400">Rumus: (Total Poin ÷ 300) × 100</div>
+          </div>
+
+          <div class="rounded-2xl bg-slate-950/80 border border-slate-800 p-5">
+            <div class="text-xs uppercase tracking-wider text-slate-400">Predikat Kelulusan PAS</div>
+            <div id="sum-predicate" class="mt-2 text-xl sm:text-2xl font-extrabold text-amber-300">-</div>
+            <div id="sum-predicate-desc" class="mt-2 text-xs text-slate-300 leading-relaxed">-</div>
+          </div>
+        </div>
+
+        <!-- Rincian Capaian Tiap Level -->
+        <div class="mt-6">
+          <h3 class="text-sm font-bold uppercase tracking-wider text-sky-400 mb-3">Rincian Poin per Level</h3>
+          <div id="sum-level-table" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3"></div>
+        </div>
+
+        <!-- Riwayat Detail 17 Misi -->
+        <div class="mt-7">
+          <h3 class="text-sm font-bold uppercase tracking-wider text-sky-400 mb-3">Riwayat Penyelesaian 17 Misi</h3>
+          <div id="sum-mission-history" class="space-y-2.5"></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="border-t border-slate-800/80 bg-slate-950/70 py-4 text-center text-xs text-slate-500 no-print">
+    NETVENTURE: TKJ ENTERPRISE QUEST • Media Penilaian Akhir Semester Kreativitas, Inovasi, dan Kewirausahaan (TJKT)
+  </footer>
+
+  <script>
+    /**
+     * Struktur data 4 level berurutan dengan bobot poin berbeda per level:
+     * - Level 1: 4 misi x 10 poin = 40 poin
+     * - Level 2: 4 misi x 15 poin = 60 poin
+     * - Level 3: 5 misi x 20 poin = 100 poin
+     * - Level 4: 4 misi x 25 poin = 100 poin
+     * Total maksimal = 300 poin.
+     */
+    const GAME_LEVELS = [
+      {
+        levelNumber: 1,
+        name: "Scout & Feasibility Check",
+        pointPerMission: 10,
+        maxPoints: 40,
+        summary: "Peluang usaha TKJ & tahapan studi kelayakan usaha",
+        missions: [
+          {
+            code: "MISI 1.1",
+            topic: "Peluang Usaha Potensial TKJ",
+            title: "Radar Peluang Sekolah & UKM",
+            scenario:
+              "Sebuah sekolah menengah membutuhkan pengelolaan sistem manajemen pembelajaran online dan data peserta didik, sementara toko-toko di sekitar tidak memiliki staf IT internal untuk memelihara jaringan.",
+            prompt: "Pilih keputusan perintisan peluang usaha yang paling tepat berdasarkan kondisi tersebut:",
+            options: [
+              {
+                label: "A",
+                text: "Membuka layanan teknologi pendidikan untuk sekolah dan konsultan IT bagi bisnis sekitar dengan memanfaatkan keahlian TKJ.",
+                isCorrect: true,
+                feedback:
+                  "Tepat! Mengidentifikasi kebutuhan pasar (sistem pembelajaran sekolah & pemeliharaan IT UKM) lalu memadukannya dengan keahlian TKJ merupakan langkah tepat menemukan peluang usaha potensial."
+              },
+              {
+                label: "B",
+                text: "Membeli pabrik pembuatan chip silikon berskala besar tanpa melakukan survei kebutuhan pasar maupun evaluasi biaya.",
+                isCorrect: false,
+                feedback:
+                  "Kurang tepat. Peluang usaha potensial harus mempertimbangkan kebutuhan pasar, keahlian yang dimiliki, serta evaluasi biaya dan profitabilitas secara terukur."
+              },
+              {
+                label: "C",
+                text: "Menutup peluang kerja sama eksternal dan menunggu pesanan datang sendiri tanpa mengikuti tren teknologi.",
+                isCorrect: false,
+                feedback:
+                  "Kurang tepat. Menemukan peluang usaha memerlukan identifikasi kebutuhan pasar, mengikuti tren industri, dan menjajaki kemitraan."
+              }
+            ]
+          },
+          {
+            code: "MISI 1.2",
+            topic: "Tujuan Analisis Kelayakan Usaha",
+            title: "Gerbang Sebelum Mengucurkan Modal",
+            scenario:
+              "Seorang rekan mengajak menyetor seluruh tabungan untuk membangun layanan jaringan RT/RW net tanpa mengkaji potensi keberhasilan pasar, pesaing, maupun proyeksi keuangan.",
+            prompt: "Tindakan manakah yang mencerminkan tujuan utama analisis kelayakan usaha?",
+            options: [
+              {
+                label: "A",
+                text: "Menyetujui penyetoran modal segera karena usaha jaringan pasti langsung untung besar tanpa risiko.",
+                isCorrect: false,
+                feedback:
+                  "Kurang tepat. Menginvestasikan dana tanpa analisis kelayakan meningkatkan risiko kegagalan finansial dan operasional."
+              },
+              {
+                label: "B",
+                text: "Melakukan analisis kelayakan usaha terlebih dahulu untuk membantu mengambil keputusan tepat sebelum menginvestasikan waktu, tenaga, dan dana.",
+                isCorrect: true,
+                feedback:
+                  "Tepat! Tujuan utama analisis kelayakan usaha adalah membantu calon pengusaha mengambil keputusan tepat sebelum menginvestasikan waktu, tenaga, dan sumber daya finansial."
+              },
+              {
+                label: "C",
+                text: "Meniru tarif pesaing secara mentah-mentah tanpa menilai arus kas maupun risiko usaha.",
+                isCorrect: false,
+                feedback:
+                  "Kurang tepat. Analisis kelayakan mengevaluasi potensi keberhasilan, keuangan, risiko, dan strategi berbasis data."
+              }
+            ]
+          },
+          {
+            code: "MISI 1.3",
+            topic: "Tahapan Analisis Kelayakan Usaha",
+            title: "Penempatan Studi Keuangan",
+            scenario:
+              "Anda menyusun dokumen kelayakan usaha jasa perawatan dan keamanan jaringan kantor. Anda perlu menempatkan penghitungan biaya awal, anggaran operasional, analisis arus kas, dan penilaian pengembalian investasi.",
+            prompt: "Di manakah komponen perhitungan dan proyeksi tersebut ditempatkan?",
+            options: [
+              {
+                label: "A",
+                text: "Pada tahapan studi keuangan.",
+                isCorrect: true,
+                feedback:
+                  "Tepat! Studi keuangan mencakup penghitungan biaya awal, anggaran operasional, proyeksi pendapatan, penilaian profitabilitas/pengembalian investasi, analisis arus kas, dan sumber modal."
+              },
+              {
+                label: "B",
+                text: "Pada tahapan analisis keberlanjutan dan lingkungan.",
+                isCorrect: false,
+                feedback:
+                  "Kurang tepat. Analisis keberlanjutan dan lingkungan meninjau dampak sosial serta faktor lingkungan yang memengaruhi usaha di masa depan."
+              },
+              {
+                label: "C",
+                text: "Menggantikan tahapan studi pasar dan studi teknis operasional.",
+                isCorrect: false,
+                feedback:
+                  "Kurang tepat. Setiap tahapan studi kelayakan memiliki fungsi spesifik yang saling melengkapi."
+              }
+            ]
+          },
+          {
+            code: "MISI 1.4",
+            topic: "Penilaian & Rencana Bisnis",
+            title: "Langkah Penutup Jika Dinyatakan Layak",
+            scenario:
+              "Seluruh tahapan analisis kelayakan usaha jasa instalasi jaringan telah dievaluasi dan disimpulkan bahwa usaha tersebut layak untuk dijalankan.",
+            prompt: "Langkah terakhir apa yang harus dilakukan berdasarkan hasil penilaian tersebut?",
+            options: [
+              {
+                label: "A",
+                text: "Menghentikan penyusunan rencana karena studi kelayakan sudah selesai.",
+                isCorrect: false,
+                feedback:
+                  "Kurang tepat. Jika usaha dinyatakan layak, perlu disusun rencana bisnis rinci sebagai panduan pelaksanaan."
+              },
+              {
+                label: "B",
+                text: "Membuat rencana bisnis yang rinci mencakup strategi pemasaran, rencana operasional, proyeksi keuangan, dan pengembangan bisnis.",
+                isCorrect: true,
+                feedback:
+                  "Tepat! Apabila usaha dianggap layak, langkah terakhir adalah membuat rencana bisnis rinci termasuk strategi pemasaran, rencana operasional, proyeksi keuangan, dan pengembangan bisnis."
+              },
+              {
+                label: "C",
+                text: "Menghapus bagian pengelolaan risiko dan dampak lingkungan.",
+                isCorrect: false,
+                feedback:
+                  "Kurang tepat. Rencana bisnis dan pengelolaan risiko tetap diperlukan agar usaha berjalan berkelanjutan."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        levelNumber: 2,
+        name: "SWOT & Strategic Pivot",
+        pointPerMission: 15,
+        maxPoints: 60,
+        summary: "Analisis SWOT (internal & eksternal), evaluasi & strategi",
+        missions: [
+          {
+            code: "MISI 2.1",
+            topic: "Identifikasi Strengths & Threats",
+            title: "Membedakan Faktor Internal vs Eksternal",
+            scenario:
+              "Usaha layanan keamanan jaringan Anda memiliki tim teknisi bersertifikat dengan keahlian khusus (1), sementara di pasar terjadi persaingan ketat serta perubahan regulasi keamanan data yang merugikan (2).",
+            prompt: "Klasifikasi SWOT yang tepat untuk kondisi (1) dan (2) adalah:",
+            options: [
+              {
+                label: "A",
+                text: "(1) adalah kekuatan internal (strengths) dan (2) adalah ancaman eksternal (threats).",
+                isCorrect: true,
+                feedback:
+                  "Tepat! Keahlian khusus dan SDM berkualitas merupakan keunggulan internal (strengths), sedangkan persaingan intensif dan perubahan regulasi yang merugikan termasuk ancaman eksternal (threats)."
+              },
+              {
+                label: "B",
+                text: "(1) adalah peluang eksternal (opportunities) dan (2) adalah kelemahan internal (weaknesses).",
+                isCorrect: false,
+                feedback:
+                  "Kurang tepat. Keahlian tim berasal dari dalam organisasi (internal), sedangkan regulasi dan persaingan berasal dari luar (eksternal)."
+              },
+              {
+                label: "C",
+                text: "(1) dan (2) keduanya merupakan kelemahan internal perusahaan.",
+                isCorrect: false,
+                feedback:
+                  "Kurang tepat. Keahlian khusus tim justru memberi keunggulan kompetitif bagi usaha."
+              }
+            ]
+          },
+          {
+            code: "MISI 2.2",
+            topic: "Identifikasi Weaknesses",
+            title: "Menambal Kerentanan Internal",
+            scenario:
+              "Dalam evaluasi internal usaha perakitan komputer dan jaringan, ditemukan kurangnya sumber daya finansial serta sistem operasional yang kurang efisien sehingga sering memperlambat pengerjaan.",
+            prompt: "Bagaimana posisi faktor-faktor tersebut dalam analisis SWOT?",
+            options: [
+              {
+                label: "A",
+                text: "Ditetapkan sebagai kelemahan internal (weaknesses) yang berpotensi menghambat kesuksesan sehingga perlu diperbaiki.",
+                isCorrect: true,
+                feedback:
+                  "Tepat! Kurangnya sumber daya finansial, keahlian/pengalaman, atau sistem operasional yang kurang efisien merupakan kelemahan internal (weaknesses) yang perlu diatasi."
+              },
+              {
+                label: "B",
+                text: "Ditetapkan sebagai peluang eksternal (opportunities) karena belum dimanfaatkan pesaing.",
+                isCorrect: false,
+                feedback:
+                  "Kurang tepat. Peluang berasal dari faktor eksternal seperti tren pasar atau teknologi baru."
+              },
+              {
+                label: "C",
+                text: "Ditetapkan sebagai ancaman eksternal (threats) berupa ketidakstabilan ekonomi.",
+                isCorrect: false,
+                feedback:
+                  "Kurang tepat. Ketidakstabilan ekonomi adalah faktor eksternal, sedangkan kondisi internal ini adalah kelemahan."
+              }
+            ]
+          },
+          {
+            code: "MISI 2.3",
+            topic: "Identifikasi Opportunities",
+            title: "Menangkap Peluang Eksternal Baru",
+            scenario:
+              "Terjadi peningkatan permintaan pasar untuk pemasangan perangkat IoT dan jaringan rumah pintar akibat perkembangan teknologi baru serta celah pasar yang belum digarap pesaing.",
+            prompt: "Faktor eksternal apakah yang sedang dihadapi usaha Anda?",
+            options: [
+              {
+                label: "A",
+                text: "Ancaman (threats) karena adanya perubahan teknologi.",
+                isCorrect: false,
+                feedback:
+                  "Kurang tepat. Kenaikan permintaan pasar dan teknologi baru yang belum dimanfaatkan pesaing justru membuka ruang pertumbuhan."
+              },
+              {
+                label: "B",
+                text: "Peluang (opportunities) eksternal yang dapat memberikan keuntungan dan pertumbuhan bagi usaha.",
+                isCorrect: true,
+                feedback:
+                  "Tepat! Perubahan tren pasar, teknologi baru, kenaikan permintaan, dan celah yang belum dimanfaatkan pesaing merupakan peluang (opportunities)."
+              },
+              {
+                label: "C",
+                text: "Kekuatan (strengths) internal berupa merek yang kuat.",
+                isCorrect: false,
+                feedback:
+                  "Kurang tepat. Kekuatan berasal dari faktor internal usaha, bukan kondisi pasar eksternal."
+              }
+            ]
+          },
+          {
+            code: "MISI 2.4",
+            topic: "Evaluasi dan Strategi SWOT",
+            title: "Menyusun & Memprioritaskan Tindakan",
+            scenario:
+              "Setelah seluruh kekuatan, kelemahan, peluang, dan ancaman teridentifikasi, Anda perlu merumuskan langkah strategis untuk mengoptimalkan keberhasilan usaha.",
+            prompt: "Rangkaian evaluasi dan strategi SWOT yang paling tepat adalah:",
+            options: [
+              {
+                label: "A",
+                text: "Mengevaluasi signifikansi faktor SWOT, merumuskan strategi memaksimalkan kekuatan, mengatasi kelemahan, memanfaatkan peluang & mengelola ancaman, lalu memprioritaskan tindakan.",
+                isCorrect: true,
+                feedback:
+                  "Tepat! Evaluasi dan strategi SWOT mencakup penilaian signifikansi faktor & dampaknya, perumusan strategi S-W-O-T, serta prioritas tindakan."
+              },
+              {
+                label: "B",
+                text: "Langsung menjalankan semua tindakan sekaligus tanpa mengevaluasi signifikansi maupun prioritas.",
+                isCorrect: false,
+                feedback:
+                  "Kurang tepat. Evaluasi signifikansi dan pemprioritasan tindakan sangat penting agar sumber daya terarah."
+              },
+              {
+                label: "C",
+                text: "Hanya fokus pada kekuatan internal tanpa memperhatikan peluang dan ancaman eksternal.",
+                isCorrect: false,
+                feedback:
+                  "Kurang tepat. Memahami peluang dan ancaman eksternal diperlukan untuk mengembangkan strategi yang tepat."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        levelNumber: 3,
+        name: "Business Model Architect",
+        pointPerMission: 20,
+        maxPoints: 100,
+        summary: "10 jenis model bisnis & 9 komponen Business Model Canvas",
+        missions: [
+          {
+            code: "MISI 3.1",
+            topic: "Dropship, Waralaba, Distributor & Manufaktur",
+            title: "Menentukan Model Bisnis Sesuai Karakter Usaha",
+            scenario:
+              "Raka ingin memulai jualan aksesori komputer dengan modal kecil, minim risiko, dan tanpa gudang karena barang dikirim langsung dari supplier (1). Sementara Dina punya modal besar dan ingin memakai merek terkenal yang sudah berjalan meski profit minimal karena mengikuti sistem pemilik brand (2).",
+            prompt: "Model bisnis yang sesuai untuk Raka dan Dina secara berurutan adalah:",
+            options: [
+              {
+                label: "A",
+                text: "(1) Dropship dan (2) Waralaba.",
+                isCorrect: true,
+                feedback:
+                  "Tepat! Dropship bermodal kecil, minim risiko, dan tanpa gudang (kirim langsung dari supplier), sedangkan waralaba berisiko kecil namun modal besar dan profit minimal karena mengikuti sistem pemilik brand."
+              },
+              {
+                label: "B",
+                text: "(1) Manufaktur dan (2) Dropship.",
+                isCorrect: false,
+                feedback:
+                  "Kurang tepat. Manufaktur mengolah barang mentah/komponen menjadi produk (seperti Dell atau HP), bukan kirim langsung dari supplier tanpa stok."
+              },
+              {
+                label: "C",
+                text: "(1) Waralaba dan (2) Distributor.",
+                isCorrect: false,
+                feedback:
+                  "Kurang tepat. Distributor membeli produk dalam volume besar untuk dijual ke retailer dengan harga lebih tinggi."
+              }
+            ]
+          },
+          {
+            code: "MISI 3.2",
+            topic: "Marketplace, Freemium, Langganan & Razor Blade",
+            title: "Strategi Monetisasi Platform & Produk Pendukung",
+            scenario:
+              "Sebuah marketplace perangkat jaringan awalnya gratis untuk menarik pengguna lalu mencari profit lewat fitur iklan, premium member, atau komisi transaksi (1). Di sisi lain, produsen alat cetak menjual unit utama murah namun mengenakan harga lebih tinggi pada isi ulang khusus yang tidak dapat digantikan merek lain (2).",
+            prompt: "Identifikasi model bisnis yang tepat untuk (1) dan (2) adalah:",
+            options: [
+              {
+                label: "A",
+                text: "(1) Marketplace dan (2) Model razor blade.",
+                isCorrect: true,
+                feedback:
+                  "Tepat! Marketplace dapat meraih profit lewat premium member, iklan, atau komisi transaksi, sedangkan model razor blade menjual produk utama lebih murah dan mengandalkan produk pendukung yang saling melengkapi serta tidak tergantikan merek lain."
+              },
+              {
+                label: "B",
+                text: "(1) Model langganan dan (2) Model one-for-one.",
+                isCorrect: false,
+                feedback:
+                  "Kurang tepat. Model langganan menagih biaya berlangganan layanan, sedangkan one-for-one mendonasikan satu barang untuk setiap barang terjual."
+              },
+              {
+                label: "C",
+                text: "(1) Model manufaktur dan (2) Model waralaba.",
+                isCorrect: false,
+                feedback:
+                  "Kurang tepat. Karakteristik tersebut bukan manufaktur maupun waralaba."
+              }
+            ]
+          },
+          {
+            code: "MISI 3.3",
+            topic: "Bundling & One-for-One",
+            title: "Paket Penawaran & Kewirausahaan Sosial",
+            scenario:
+              "Sebuah toko TI menjual paket komputer + mouse + kabel sekaligus dengan harga paket lebih murah agar volume naik dan produk yang sulit terjual ikut laku meski margin lebih tipis (1). Usaha lain berkonsep kewirausahaan sosial mendonasikan satu unit barang edukasi untuk setiap barang yang terjual (2).",
+            prompt: "Kedua model bisnis tersebut secara berurutan disebut:",
+            options: [
+              {
+                label: "A",
+                text: "(1) Model bundling dan (2) Model one-for-one.",
+                isCorrect: true,
+                feedback:
+                  "Tepat! Bundling menjual dua atau lebih produk bersama dengan harga lebih rendah (meningkatkan volume & memudahkan produk sulit laku, namun margin bisa menyusut), sedangkan one-for-one mendonasikan satu barang tiap penjualan untuk menggugah kesadaran sosial."
+              },
+              {
+                label: "B",
+                text: "(1) Model freemium dan (2) Model distributor.",
+                isCorrect: false,
+                feedback:
+                  "Kurang tepat. Freemium menyediakan akses gratis dengan batasan fitur premium (seperti YouTube), dan distributor menyalurkan produk ke retailer."
+              },
+              {
+                label: "C",
+                text: "(1) Model one-for-one dan (2) Model bundling.",
+                isCorrect: false,
+                feedback:
+                  "Kurang tepat. Urutan keduanya terbalik."
+              }
+            ]
+          },
+          {
+            code: "MISI 3.4",
+            topic: "9 Komponen BMC (Segmen, Nilai & Saluran)",
+            title: "Merancang Sisi Pasar & Nilai pada BMC",
+            scenario:
+              "Anda menyusun Business Model Canvas (BMC) untuk layanan dukungan jaringan sekolah & UKM. Anda perlu menentukan target pelanggan beserta kebutuhannya (1), keunikan solusi & pemecahan masalah bagi pelanggan (2), serta saluran penyampaian dan interaksi online/offline (3).",
+            prompt: "Komponen BMC yang sesuai untuk (1), (2), dan (3) secara berurutan adalah:",
+            options: [
+              {
+                label: "A",
+                text: "(1) Customer segments, (2) Value propositions, dan (3) Channels.",
+                isCorrect: true,
+                feedback:
+                  "Tepat! Customer segments mendeskripsikan target pasar & kebutuhannya, value propositions menjelaskan keunikan, manfaat & pemecahan masalah, dan channels mengatur saluran distribusi serta komunikasi/interaksi pelanggan."
+              },
+              {
+                label: "B",
+                text: "(1) Cost structure, (2) Key partnerships, dan (3) Revenue streams.",
+                isCorrect: false,
+                feedback:
+                  "Kurang tepat. Komponen tersebut berkaitan dengan biaya, kemitraan, dan pendapatan."
+              },
+              {
+                label: "C",
+                text: "(1) Key resources, (2) Key activities, dan (3) Channels.",
+                isCorrect: false,
+                feedback:
+                  "Kurang tepat. Key resources dan key activities berfokus pada sumber daya dan proses operasional internal."
+              }
+            ]
+          },
+          {
+            code: "MISI 3.5",
+            topic: "9 Komponen BMC (Pendapatan, Sumber Daya, Aktivitas, Kemitraan & Biaya)",
+            title: "Melengkapi Pilar Operasional & Finansial BMC",
+            scenario:
+              "Dalam melengkapi 9 komponen BMC usaha layanan IT, Anda memetakan sumber pendapatan & strategi harga (1), sumber daya fisik/intelektual/manusia/keuangan (2), aktivitas operasional krusial (3), mitra penyedia sumber daya/distribusi (4), serta biaya produksi/pemasaran/pengiriman/infrastruktur (5).",
+            prompt: "Urutan komponen BMC yang tepat untuk (1) sampai (5) adalah:",
+            options: [
+              {
+                label: "A",
+                text: "(1) Revenue streams, (2) Key resources, (3) Key activities, (4) Key partnerships, dan (5) Cost structure.",
+                isCorrect: true,
+                feedback:
+                  "Tepat! Kelima blok tersebut bersama customer segments, value propositions, channels, dan customer relationships membentuk 9 komponen kunci BMC untuk merancang dan menginovasi model bisnis."
+              },
+              {
+                label: "B",
+                text: "(1) Cost structure, (2) Revenue streams, (3) Key partnerships, (4) Key activities, dan (5) Key resources.",
+                isCorrect: false,
+                feedback:
+                  "Kurang tepat. Pasangan definisi dan nama komponen BMC tidak sesuai."
+              },
+              {
+                label: "C",
+                text: "(1) Key activities, (2) Cost structure, (3) Revenue streams, (4) Key resources, dan (5) Key partnerships.",
+                isCorrect: false,
+                feedback:
+                  "Kurang tepat. Urutan pemetaan komponen tidak sesuai dengan fungsi masing-masing blok."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        levelNumber: 4,
+        name: "IP Shield & Final Launch",
+        pointPerMission: 25,
+        maxPoints: 100,
+        summary: "Hak Atas Kekayaan Intelektual (HAKI) & peluncuran usaha TKJ",
+        missions: [
+          {
+            code: "MISI 4.1",
+            topic: "Hak Atas Kekayaan Intelektual (HAKI)",
+            title: "Perlindungan Hukum Perangkat Lunak & Karya Kreatif",
+            scenario:
+              "Tim TKJ Anda mengembangkan perangkat lunak pemantauan jaringan, buku panduan teknis, dan desain kreatif. Anda ingin memberi insentif berinovasi serta memiliki kontrol eksklusif atas penggunaan, reproduksi, distribusi, dan pemanfaatan komersial karya tersebut.",
+            prompt: "Landasan perlindungan yang paling tepat diterapkan adalah:",
+            options: [
+              {
+                label: "A",
+                text: "Memahami dan memanfaatkan perlindungan HAKI (termasuk hak cipta atas perangkat lunak komputer dan buku) agar karya terlindungi secara hukum.",
+                isCorrect: true,
+                feedback:
+                  "Tepat! HAKI memberikan perlindungan hukum atas kekayaan intelektual (seperti hak cipta untuk perangkat lunak komputer dan buku) sehingga pencipta memiliki kontrol eksklusif dan aman dalam berinovasi."
+              },
+              {
+                label: "B",
+                text: "Membagikan seluruh karya secara bebas tanpa perlindungan hukum karena perangkat lunak tidak termasuk kekayaan intelektual.",
+                isCorrect: false,
+                feedback:
+                  "Kurang tepat. Perangkat lunak komputer dan buku termasuk karya kreatif yang dilindungi hak cipta dalam kerangka HAKI."
+              },
+              {
+                label: "C",
+                text: "Mengabaikan kontrol eksklusif pemanfaatan komersial meskipun produk dikembangkan untuk bisnis.",
+                isCorrect: false,
+                feedback:
+                  "Kurang tepat. Perlindungan hukum HAKI penting agar pencipta/pemilik memiliki kontrol eksklusif atas penggunaan dan pemanfaatan komersialnya."
+              }
+            ]
+          },
+          {
+            code: "MISI 4.2",
+            topic: "Cakupan HAKI & Eksperimen BMC",
+            title: "Menjaga Aset Intelektual Saat Mengembangkan Model Bisnis",
+            scenario:
+              "Usaha solusi jaringan Anda menggunakan BMC untuk melakukan eksperimen, inovasi, dan perbaikan model bisnis secara visual. Selain perangkat lunak, usaha Anda juga memiliki penemuan teknologi, merek dagang, dan rahasia dagang.",
+            prompt: "Sikap strategis yang paling tepat menggabungkan BMC dan HAKI adalah:",
+            options: [
+              {
+                label: "A",
+                text: "Menggunakan BMC untuk bereksperimen dan memperbaiki model bisnis sambil menjaga perlindungan hukum atas kekayaan intelektual termasuk penemuan teknologi, merek dagang, dan rahasia dagang.",
+                isCorrect: true,
+                feedback:
+                  "Tepat! Kekayaan intelektual mencakup penemuan teknologi, karya sastra, musik, seni, desain, merek dagang, dan rahasia dagang, sementara BMC membantu eksperimen dan perbaikan model bisnis secara terstruktur."
+              },
+              {
+                label: "B",
+                text: "Menghentikan seluruh perbaikan model bisnis dan menganggap merek dagang serta rahasia dagang bukan bagian dari kekayaan intelektual.",
+                isCorrect: false,
+                feedback:
+                  "Kurang tepat. Merek dagang, rahasia dagang, dan penemuan teknologi termasuk kekayaan intelektual, dan BMC justru memudahkan inovasi model bisnis."
+              },
+              {
+                label: "C",
+                text: "Menggunakan hak cipta untuk menggantikan seluruh fungsi perencanaan keuangan dan analisis risiko.",
+                isCorrect: false,
+                feedback:
+                  "Kurang tepat. Hak cipta melindungi karya kreatif, sedangkan analisis kelayakan dan keuangan tetap diperlukan untuk menilai kelayakan usaha."
+              }
+            ]
+          },
+          {
+            code: "MISI 4.3",
+            topic: "Evaluasi Biaya, Nilai & Risiko Usaha",
+            title: "Mengatasi Lonjakan Biaya & Tekanan Persaingan",
+            scenario:
+              "Usaha penyedia layanan jaringan mengalami kenaikan biaya infrastruktur dan operasional, pesaing menawarkan harga lebih rendah, dan pelanggan menuntut kejelasan manfaat serta pemecahan masalah.",
+            prompt: "Langkah evaluatif paling komprehensif berdasarkan materi modul adalah:",
+            options: [
+              {
+                label: "A",
+                text: "Mengevaluasi cost structure (biaya produksi/infrastruktur serta opsi model biaya rendah atau diferensiasi biaya), memperkuat value propositions, dan mengelola risiko/ancaman secara terukur.",
+                isCorrect: true,
+                feedback:
+                  "Tepat! Meninjau cost structure (model biaya rendah atau diferensiasi biaya), memperkuat value propositions, serta menilai risiko dan ancaman eksternal membantu menjaga daya saing usaha."
+              },
+              {
+                label: "B",
+                text: "Menaikkan seluruh biaya tanpa mengevaluasi cost structure, value propositions, maupun potensi risiko.",
+                isCorrect: false,
+                feedback:
+                  "Kurang tepat. Keputusan tanpa evaluasi biaya, proposisi nilai, dan risiko dapat memperburuk profitabilitas."
+              },
+              {
+                label: "C",
+                text: "Menutup usaha tanpa meninjau peluang, kekuatan internal, maupun rencana bisnis.",
+                isCorrect: false,
+                feedback:
+                  "Kurang tepat. Evaluasi menyeluruh diperlukan sebelum mengambil keputusan strategis atas kelangsungan usaha."
+              }
+            ]
+          },
+          {
+            code: "MISI 4.4",
+            topic: "Final Boss: Peluncuran Usaha TKJ",
+            title: "Presentasi Kelayakan & Peluncuran Usaha di Sidang PAS",
+            scenario:
+              "Anda berada di tahap akhir Penilaian Akhir Semester untuk mempresentasikan peluncuran usaha solusi jaringan dan teknologi pendidikan berbasis kompetensi TKJ.",
+            prompt: "Bukti kesiapan manakah yang paling tepat Anda paparkan untuk menuntaskan misi PAS?",
+            options: [
+              {
+                label: "A",
+                text: "Peluang usaha berbasis kebutuhan pasar & keahlian TKJ, studi kelayakan & SWOT terukur, rencana bisnis rinci, kanvas BMC 9 komponen yang saling terkait, serta perlindungan HAKI.",
+                isCorrect: true,
+                feedback:
+                  "Luar biasa! Anda mengintegrasikan seluruh kompetensi utama dari identifikasi peluang TKJ, analisis kelayakan & SWOT, model bisnis & 9 blok BMC, hingga perlindungan HAKI."
+              },
+              {
+                label: "B",
+                text: "Memulai usaha tanpa studi kelayakan, tanpa model bisnis, tanpa rencana bisnis, dan mengabaikan HAKI.",
+                isCorrect: false,
+                feedback:
+                  "Kurang tepat. Usaha tanpa analisis kelayakan, model bisnis, rencana bisnis, dan perlindungan HAKI rentan gagal dan berisiko hukum."
+              },
+              {
+                label: "C",
+                text: "Menjual produk tiruan tanpa izin dan tanpa menghitung biaya, pendapatan, maupun risiko operasional.",
+                isCorrect: false,
+                feedback:
+                  "Kurang tepat. Praktik tersebut melanggar perlindungan HAKI serta mengabaikan prinsip kelayakan usaha."
+              }
+            ]
+          }
+        ]
+      }
+    ];
+
+    /**
+     * State aplikasi permainan
+     */
+    const state = {
+      student: {
+        nama: "",
+        kelas: "",
+        absen: ""
+      },
+      currentLevelIdx: 0,
+      currentMissionIdx: 0,
+      scoresPerLevel: GAME_LEVELS.map(() => 0),
+      answeredCurrentMission: false,
+      history: [] // Menyimpan riwayat tiap misi yang sudah dijawab
+    };
+
+    // Helper untuk mengambil objek level & misi aktif
+    function getActiveLevel() {
+      return GAME_LEVELS[state.currentLevelIdx];
+    }
+
+    function getActiveMission() {
+      return getActiveLevel().missions[state.currentMissionIdx];
+    }
+
+    function getTotalScore() {
+      return state.scoresPerLevel.reduce((acc, val) => acc + val, 0);
+    }
+
+    function getConvertedGrade() {
+      return ((getTotalScore() / 300) * 100).toFixed(2);
+    }
+
+    // Menampilkan banner notifikasi non-alert
+    function showToast(message, type = "info") {
+      const banner = document.getElementById("toast-banner");
+      const msgEl = document.getElementById("toast-message");
+      banner.classList.remove(
+        "hidden",
+        "bg-sky-950/90",
+        "border-sky-500/40",
+        "text-sky-200",
+        "bg-emerald-950/90",
+        "border-emerald-500/40",
+        "text-emerald-200",
+        "bg-rose-950/90",
+        "border-rose-500/40",
+        "text-rose-200"
+      );
+
+      if (type === "success") {
+        banner.classList.add("bg-emerald-950/90", "border-emerald-500/40", "text-emerald-200");
+      } else if (type === "error") {
+        banner.classList.add("bg-rose-950/90", "border-rose-500/40", "text-rose-200");
+      } else {
+        banner.classList.add("bg-sky-950/90", "border-sky-500/40", "text-sky-200");
+      }
+
+      msgEl.textContent = message;
+    }
+
+    function hideToast() {
+      document.getElementById("toast-banner").classList.add("hidden");
+    }
+
+    // Memulai game setelah validasi identitas siswa
+    function handleStartGame(event) {
+      event.preventDefault();
+      try {
+        const namaInput = document.getElementById("input-nama").value.trim();
+        const kelasInput = document.getElementById("input-kelas").value.trim();
+        const absenInput = document.getElementById("input-absen").value.trim();
+
+        if (!namaInput || !kelasInput || !absenInput) {
+          showToast("Mohon lengkapi seluruh kolom identitas siswa terlebih dahulu.", "error");
+          return;
+        }
+
+        state.student = {
+          nama: namaInput,
+          kelas: kelasInput,
+          absen: absenInput
+        };
+        state.currentLevelIdx = 0;
+        state.currentMissionIdx = 0;
+        state.scoresPerLevel = GAME_LEVELS.map(() => 0);
+        state.answeredCurrentMission = false;
+        state.history = [];
+
+        hideToast();
+        document.getElementById("screen-intro").classList.add("hidden");
+        document.getElementById("screen-summary").classList.add("hidden");
+        document.getElementById("screen-game").classList.remove("hidden");
+        document.getElementById("hud-panel").classList.remove("hidden");
+
+        const pill = document.getElementById("header-student-pill");
+        pill.classList.remove("hidden");
+        pill.classList.add("flex");
+        document.getElementById("header-student-text").textContent =
+          `${state.student.nama} • Absen ${state.student.absen}`;
+
+        renderHUD();
+        renderMission();
+        showToast(`Selamat bertugas, ${state.student.nama}! Selesaikan Level 1 (10 poin/misi).`, "info");
+      } catch (err) {
+        showToast("Terjadi kendala saat memulai sesi game. Silakan muat ulang.", "error");
+      }
+    }
+
+    // Memperbarui papan skor real-time dan indikator progress 4 level
+    function renderHUD() {
+      const totalScore = getTotalScore();
+      const grade = getConvertedGrade();
+      const level = getActiveLevel();
+
+      document.getElementById("hud-score").textContent = totalScore;
+      document.getElementById("hud-grade").textContent = grade;
+      document.getElementById("hud-level-badge").textContent = `Level ${level.levelNumber}: ${level.name}`;
+      document.getElementById("hud-point-weight").textContent = `+${level.pointPerMission} Poin/Misi`;
+      document.getElementById("hud-missions-done").textContent = state.history.length;
+
+      // Stepper 4 level
+      const stepperEl = document.getElementById("level-stepper");
+      stepperEl.innerHTML = GAME_LEVELS.map((lvl, idx) => {
+        const isCurrent = idx === state.currentLevelIdx;
+        const isCompleted = idx < state.currentLevelIdx || (idx === GAME_LEVELS.length - 1 && state.history.length === 17);
+        const lvlScore = state.scoresPerLevel[idx];
+
+        let cardClass = "bg-slate-950/60 border-slate-800 text-slate-400";
+        let statusText = "Terkunci / Menunggu";
+        let badgeClass = "bg-slate-800 text-slate-400";
+
+        if (isCurrent && !isCompleted) {
+          cardClass = "bg-sky-950/50 border-sky-400/60 text-white ring-1 ring-sky-400/30";
+          statusText = "Sedang Berjalan";
+          badgeClass = "bg-sky-500/20 text-sky-300";
+        } else if (isCompleted) {
+          cardClass = "bg-emerald-950/35 border-emerald-500/40 text-slate-200";
+          statusText = "Selesai";
+          badgeClass = "bg-emerald-500/20 text-emerald-300";
+        }
+
+        return `
+          <div class="rounded-xl border p-3 transition ${cardClass}">
+            <div class="flex items-center justify-between gap-2">
+              <span class="font-mono-tech text-[11px] font-bold uppercase">LVL ${lvl.levelNumber} • ${lvl.pointPerMission}pt/misi</span>
+              <span class="text-[11px] font-semibold px-2 py-0.5 rounded-md ${badgeClass}">${statusText}</span>
+            </div>
+            <div class="text-xs font-bold mt-1 truncate">${lvl.name}</div>
+            <div class="mt-1.5 flex items-center justify-between text-[11px] font-mono-tech">
+              <span>Skor Level</span>
+              <span class="font-bold text-emerald-300">${lvlScore} / ${lvl.maxPoints}</span>
+            </div>
+          </div>
+        `;
+      }).join("");
+
+      // Breakdown di panel samping
+      const sidebarEl = document.getElementById("sidebar-level-breakdown");
+      sidebarEl.innerHTML = GAME_LEVELS.map((lvl, idx) => {
+        const pct = Math.round((state.scoresPerLevel[idx] / lvl.maxPoints) * 100);
+        return `
+          <div class="rounded-xl bg-slate-950/75 border border-slate-800/90 p-3">
+            <div class="flex items-center justify-between text-xs">
+              <span class="font-bold text-slate-200">Level ${lvl.levelNumber}: ${lvl.name}</span>
+              <span class="font-mono-tech font-bold text-emerald-400">${state.scoresPerLevel[idx]}/${lvl.maxPoints}</span>
+            </div>
+            <div class="w-full h-2 rounded-full bg-slate-800 mt-2 overflow-hidden">
+              <div class="h-full bg-gradient-to-r from-sky-400 to-emerald-400 transition-all duration-300" style="width: ${pct}%"></div>
+            </div>
+            <div class="mt-1 flex items-center justify-between text-[11px] text-slate-400">
+              <span>${lvl.missions.length} misi × ${lvl.pointPerMission} poin</span>
+              <span class="font-mono-tech">${pct}%</span>
+            </div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    // Merender misi yang sedang aktif
+    function renderMission() {
+      const level = getActiveLevel();
+      const mission = getActiveMission();
+      state.answeredCurrentMission = false;
+
+      const cardContainer = document.querySelector("#screen-game > div > div:first-child");
+      cardContainer.classList.remove("animate-mission");
+      void cardContainer.offsetWidth;
+      cardContainer.classList.add("animate-mission");
+
+      document.getElementById("mission-level-tag").textContent =
+        `LEVEL ${level.levelNumber} • ${level.name.toUpperCase()}`;
+      document.getElementById("mission-code-tag").textContent = mission.code;
+      document.getElementById("mission-topic-tag").textContent = mission.topic;
+      document.getElementById("mission-reward-tag").textContent = `+${level.pointPerMission} Poin`;
+      document.getElementById("mission-title").textContent = mission.title;
+      document.getElementById("mission-scenario").textContent = mission.scenario;
+      document.getElementById("mission-prompt").textContent = mission.prompt;
+
+      document.getElementById("mission-progress-label").textContent =
+        `Level ${level.levelNumber}/4 • Misi ${state.currentMissionIdx + 1}/${level.missions.length} (Total Misi ${state.history.length + 1}/17)`;
+
+      // Sembunyikan kotak umpan balik & nonaktifkan tombol lanjut sampai opsi dipilih
+      const feedbackBox = document.getElementById("feedback-box");
+      feedbackBox.classList.add("hidden");
+
+      const nextBtn = document.getElementById("btn-next-mission");
+      nextBtn.disabled = true;
+
+      const isLastMissionOverall =
+        state.currentLevelIdx === GAME_LEVELS.length - 1 &&
+        state.currentMissionIdx === level.missions.length - 1;
+      const isLastMissionInLevel = state.currentMissionIdx === level.missions.length - 1;
+
+      if (isLastMissionOverall) {
+        document.getElementById("btn-next-label").textContent = "Lihat Rekapitulasi Nilai PAS";
+      } else if (isLastMissionInLevel) {
+        document.getElementById("btn-next-label").textContent = `Naik ke Level ${level.levelNumber + 1}`;
+      } else {
+        document.getElementById("btn-next-label").textContent = "Lanjut ke Misi Berikutnya";
+      }
+
+      // Render pilihan jawaban
+      const optionsContainer = document.getElementById("mission-options");
+      optionsContainer.innerHTML = mission.options
+        .map(
+          (opt, optIdx) => `
+          <button
+            type="button"
+            id="option-btn-${optIdx}"
+            onclick="selectOption(${optIdx})"
+            class="w-full text-left rounded-xl bg-slate-950/75 hover:bg-slate-800/80 border border-slate-700/90 hover:border-sky-400/60 p-4 transition flex items-start gap-3.5 cursor-pointer group"
+          >
+            <span class="font-mono-tech text-xs font-extrabold w-7 h-7 rounded-lg bg-slate-800 group-hover:bg-sky-500/20 text-sky-300 border border-slate-700 group-hover:border-sky-400/40 flex items-center justify-center shrink-0 mt-0.5">
+              ${opt.label}
+            </span>
+            <span class="text-sm text-slate-200 leading-relaxed">${opt.text}</span>
+          </button>
+        `
+        )
+        .join("");
+    }
+
+    // Menangani pemilihan opsi dan umpan balik langsung
+    function selectOption(selectedIdx) {
+      if (state.answeredCurrentMission) return;
+      state.answeredCurrentMission = true;
+
+      const level = getActiveLevel();
+      const mission = getActiveMission();
+      const chosenOption = mission.options[selectedIdx];
+      const earnedPoints = chosenOption.isCorrect ? level.pointPerMission : 0;
+
+      state.scoresPerLevel[state.currentLevelIdx] += earnedPoints;
+
+      state.history.push({
+        levelNumber: level.levelNumber,
+        levelName: level.name,
+        code: mission.code,
+        title: mission.title,
+        topic: mission.topic,
+        chosenLabel: chosenOption.label,
+        isCorrect: chosenOption.isCorrect,
+        earnedPoints,
+        maxPoints: level.pointPerMission,
+        feedback: chosenOption.feedback
+      });
+
+      // Kunci & warnai seluruh tombol opsi
+      mission.options.forEach((opt, idx) => {
+        const btn = document.getElementById(`option-btn-${idx}`);
+        btn.disabled = true;
+        btn.classList.remove("cursor-pointer", "hover:bg-slate-800/80", "hover:border-sky-400/60");
+        btn.classList.add("cursor-default");
+
+        if (idx === selectedIdx) {
+          if (opt.isCorrect) {
+            btn.classList.remove("bg-slate-950/75", "border-slate-700/90");
+            btn.classList.add("bg-emerald-950/60", "border-emerald-400", "ring-1", "ring-emerald-400/40");
+          } else {
+            btn.classList.remove("bg-slate-950/75", "border-slate-700/90");
+            btn.classList.add("bg-rose-950/60", "border-rose-400", "ring-1", "ring-rose-400/40");
+          }
+        } else if (opt.isCorrect) {
+          btn.classList.remove("bg-slate-950/75", "border-slate-700/90");
+          btn.classList.add("bg-emerald-950/30", "border-emerald-500/50");
+        } else {
+          btn.classList.add("opacity-60");
+        }
+      });
+
+      // Tampilkan kotak umpan balik langsung
+      const feedbackBox = document.getElementById("feedback-box");
+      const feedbackTitle = document.getElementById("feedback-title");
+      const feedbackPoints = document.getElementById("feedback-points");
+      const feedbackExplanation = document.getElementById("feedback-explanation");
+      const feedbackIcon = document.getElementById("feedback-icon");
+
+      feedbackBox.classList.remove(
+        "hidden",
+        "bg-emerald-950/50",
+        "border-emerald-500/40",
+        "bg-rose-950/50",
+        "border-rose-500/40"
+      );
+      feedbackPoints.classList.remove(
+        "bg-emerald-500/20",
+        "text-emerald-300",
+        "bg-rose-500/20",
+        "text-rose-300"
+      );
+
+      if (chosenOption.isCorrect) {
+        feedbackBox.classList.add("bg-emerald-950/50", "border-emerald-500/40");
+        feedbackTitle.textContent = "Keputusan Strategis Tepat!";
+        feedbackTitle.className = "font-bold text-sm sm:text-base text-emerald-300";
+        feedbackPoints.textContent = `+${earnedPoints} Poin`;
+        feedbackPoints.classList.add("bg-emerald-500/20", "text-emerald-300");
+        feedbackIcon.innerHTML = `
+          <svg class="w-6 h-6 text-emerald-400" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        `;
+      } else {
+        feedbackBox.classList.add("bg-rose-950/50", "border-rose-500/40");
+        feedbackTitle.textContent = "Keputusan Kurang Tepat";
+        feedbackTitle.className = "font-bold text-sm sm:text-base text-rose-300";
+        feedbackPoints.textContent = `0 Poin`;
+        feedbackPoints.classList.add("bg-rose-500/20", "text-rose-300");
+        feedbackIcon.innerHTML = `
+          <svg class="w-6 h-6 text-rose-400" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        `;
+      }
+
+      feedbackExplanation.textContent = chosenOption.feedback;
+      document.getElementById("btn-next-mission").disabled = false;
+      renderHUD();
+    }
+
+    // Melangkah ke misi berikutnya, level berikutnya, atau rekapitulasi akhir
+    function goToNextStep() {
+      if (!state.answeredCurrentMission) return;
+      hideToast();
+
+      const currentLevel = getActiveLevel();
+      const isLastMissionInLevel = state.currentMissionIdx === currentLevel.missions.length - 1;
+      const isLastLevel = state.currentLevelIdx === GAME_LEVELS.length - 1;
+
+      if (!isLastMissionInLevel) {
+        state.currentMissionIdx += 1;
+        renderHUD();
+        renderMission();
+      } else if (!isLastLevel) {
+        state.currentLevelIdx += 1;
+        state.currentMissionIdx = 0;
+        const nextLevel = getActiveLevel();
+        renderHUD();
+        renderMission();
+        showToast(
+          `Level ${nextLevel.levelNumber} (${nextLevel.name}) terbuka! Bobot setiap misi: +${nextLevel.pointPerMission} poin.`,
+          "success"
+        );
+      } else {
+        renderHUD();
+        showSummaryScreen();
+      }
+    }
+
+    // Menentukan predikat kelulusan PAS berdasarkan nilai 0-100
+    function getPredicateInfo(gradeNumber) {
+      if (gradeNumber >= 85) {
+        return {
+          title: "Sangat Mahir (Master Entrepreneur TJKT)",
+          desc: "Menguasai analisis peluang TKJ, studi kelayakan, SWOT, model bisnis & 9 blok BMC, serta HAKI dengan sangat baik.",
+          colorClass: "text-emerald-400"
+        };
+      }
+      if (gradeNumber >= 70) {
+        return {
+          title: "Kompeten (Ready to Launch)",
+          desc: "Memenuhi standar kelulusan PAS dan mampu menerapkan konsep kewirausahaan TKJ pada kasus nyata.",
+          colorClass: "text-sky-400"
+        };
+      }
+      return {
+        title: "Perlu Penguatan / Remedial",
+        desc: "Disarankan mengulang kembali materi dan misi pada level dengan perolehan poin terendah sebelum penilaian lanjutan.",
+        colorClass: "text-amber-300"
+      };
+    }
+
+    // Menampilkan rekapitulasi nilai PAS akhir
+    function showSummaryScreen() {
+      document.getElementById("screen-game").classList.add("hidden");
+      document.getElementById("screen-summary").classList.remove("hidden");
+
+      const totalScore = getTotalScore();
+      const gradeStr = getConvertedGrade();
+      const gradeNum = parseFloat(gradeStr);
+      const correctCount = state.history.filter((item) => item.isCorrect).length;
+      const predicate = getPredicateInfo(gradeNum);
+
+      document.getElementById("sum-nama").textContent = state.student.nama;
+      document.getElementById("sum-kelas").textContent = state.student.kelas;
+      document.getElementById("sum-absen").textContent = state.student.absen;
+
+      document.getElementById("sum-score").textContent = totalScore;
+      document.getElementById("sum-accuracy").textContent =
+        `Keputusan tepat: ${correctCount} / ${state.history.length} misi`;
+      document.getElementById("sum-grade").textContent = gradeStr;
+
+      const predEl = document.getElementById("sum-predicate");
+      predEl.textContent = predicate.title;
+      predEl.className = `mt-2 text-xl sm:text-2xl font-extrabold ${predicate.colorClass}`;
+      document.getElementById("sum-predicate-desc").textContent = predicate.desc;
+
+      // Rincian tiap level
+      document.getElementById("sum-level-table").innerHTML = GAME_LEVELS.map((lvl, idx) => {
+        const earned = state.scoresPerLevel[idx];
+        return `
+          <div class="rounded-xl bg-slate-950/75 border border-slate-800 p-4">
+            <div class="font-mono-tech text-xs text-sky-400 font-bold">LEVEL ${lvl.levelNumber}</div>
+            <div class="font-bold text-white text-sm mt-0.5">${lvl.name}</div>
+            <div class="mt-2 font-mono-tech text-lg font-extrabold text-emerald-400">
+              ${earned} <span class="text-xs font-normal text-slate-400">/ ${lvl.maxPoints} poin</span>
+            </div>
+          </div>
+        `;
+      }).join("");
+
+      // Riwayat 17 misi
+      document.getElementById("sum-mission-history").innerHTML = state.history
+        .map((item, idx) => {
+          const badge = item.isCorrect
+            ? `<span class="font-mono-tech text-xs font-bold px-2.5 py-1 rounded-lg bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">+${item.earnedPoints} Poin</span>`
+            : `<span class="font-mono-tech text-xs font-bold px-2.5 py-1 rounded-lg bg-rose-500/15 text-rose-300 border border-rose-500/30">0 Poin</span>`;
+
+          return `
+            <div class="rounded-xl bg-slate-950/65 border border-slate-800/90 p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div>
+                <div class="flex items-center gap-2 flex-wrap">
+                  <span class="font-mono-tech text-xs text-slate-400">#${idx + 1} • Lvl ${item.levelNumber} (${item.code})</span>
+                  <span class="text-sm font-bold text-white">${item.title}</span>
+                  <span class="text-xs text-sky-300/90">• Opsi ${item.chosenLabel}</span>
+                </div>
+                <p class="text-xs text-slate-400 mt-1">${item.feedback}</p>
+              </div>
+              <div class="shrink-0">${badge}</div>
+            </div>
+          `;
+        })
+        .join("");
+
+      showToast("Seluruh 17 misi PAS telah selesai! Nilai akhir Anda siap dicetak atau disalin.", "success");
+    }
+
+    // Menyusun teks ringkasan nilai PAS untuk disalin
+    function buildSummaryText() {
+      const totalScore = getTotalScore();
+      const grade = getConvertedGrade();
+      const gradeNum = parseFloat(grade);
+      const predicate = getPredicateInfo(gradeNum).title;
+      const correctCount = state.history.filter((h) => h.isCorrect).length;
+
+      const levelLines = GAME_LEVELS.map(
+        (lvl, idx) => `- Level ${lvl.levelNumber} (${lvl.name}): ${state.scoresPerLevel[idx]}/${lvl.maxPoints} poin`
+      ).join("\n");
+
+      return [
+        "REKAPITULASI NILAI PAS — NETVENTURE: TKJ ENTERPRISE QUEST",
+        "Mata Pelajaran: Kreativitas, Inovasi, dan Kewirausahaan (TJKT)",
+        `Nama: ${state.student.nama || "-"}`,
+        `Kelas: ${state.student.kelas || "-"}`,
+        `No. Presensi: ${state.student.absen || "-"}`,
+        `Skor Total: ${totalScore} / 300 Poin (${correctCount}/17 misi tepat)`,
+        `Nilai PAS (0-100): ${grade}`,
+        `Predikat: ${predicate}`,
+        "Rincian per Level:",
+        levelLines
+      ].join("\n");
+    }
+
+    // Menyalin ringkasan ke clipboard menggunakan execCommand agar aman di iframe
+    function copySummaryToClipboard() {
+      try {
+        const text = buildSummaryText();
+        const textarea = document.createElement("textarea");
+        textarea.value = text;
+        textarea.setAttribute("readonly", "");
+        textarea.style.position = "fixed";
+        textarea.style.left = "-9999px";
+        document.body.appendChild(textarea);
+        textarea.select();
+        const success = document.execCommand("copy");
+        document.body.removeChild(textarea);
+
+        if (success) {
+          showToast("Ringkasan nilai PAS berhasil disalin ke clipboard.", "success");
+        } else {
+          showToast("Gagal menyalin ringkasan. Silakan gunakan tombol Cetak / Simpan PDF.", "error");
+        }
+      } catch (err) {
+        showToast("Tidak dapat mengakses clipboard pada browser ini.", "error");
+      }
+    }
+
+    // Konfirmasi ulangi game tanpa menggunakan confirm()
+    let resetConfirmPending = false;
+    let resetConfirmTimer = null;
+
+    function confirmRestartGame() {
+      if (state.history.length === 0 && document.getElementById("screen-game").classList.contains("hidden")) {
+        restartGameImmediate();
+        return;
+      }
+
+      if (!resetConfirmPending) {
+        resetConfirmPending = true;
+        showToast("Klik tombol 'Ulangi Game' sekali lagi untuk mereset seluruh progres PAS.", "info");
+        clearTimeout(resetConfirmTimer);
+        resetConfirmTimer = setTimeout(() => {
+          resetConfirmPending = false;
+        }, 4000);
+      } else {
+        resetConfirmPending = false;
+        clearTimeout(resetConfirmTimer);
+        restartGameImmediate();
+      }
+    }
+
+    function restartGameImmediate() {
+      state.currentLevelIdx = 0;
+      state.currentMissionIdx = 0;
+      state.scoresPerLevel = GAME_LEVELS.map(() => 0);
+      state.answeredCurrentMission = false;
+      state.history = [];
+
+      document.getElementById("screen-game").classList.add("hidden");
+      document.getElementById("screen-summary").classList.add("hidden");
+      document.getElementById("hud-panel").classList.add("hidden");
+      document.getElementById("header-student-pill").classList.add("hidden");
+      document.getElementById("screen-intro").classList.remove("hidden");
+
+      showToast("Sesi game telah direset. Silakan periksa identitas lalu mulai kembali.", "info");
+    }
+  </script>
+</body>
+</html>
